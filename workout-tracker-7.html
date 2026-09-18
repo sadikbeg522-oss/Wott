@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Workout Tracker</title>
+<style>
+  :root{
+    --bg: #F2F2F7;
+    --card: #FFFFFF;
+    --ink: #1C1C1E;
+    --ink-muted: #8A8A8E;
+    --ink-faint: #C7C7CC;
+    --border: #E5E5EA;
+    --accent: #0A84FF;
+    --accent-soft: #E8F2FF;
+    --danger: #FF3B30;
+    --m-green: #30B158;
+    --m-green-soft: #E7F8EC;
+    --m-blue: #0A84FF;
+    --m-blue-soft: #E8F2FF;
+    --m-red: #FF3B30;
+    --m-red-soft: #FFEBEA;
+    --tooltip-bg: #1C1C1E;
+    --radius-lg: 18px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  #app {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    position: relative;
+    padding-bottom: 92px;
+  }
+
+  .page-header { padding: 22px 20px 6px; }
+  .page-eyebrow { font-size: 13px; font-weight: 600; color: var(--accent); margin: 0 0 2px; transition: color 0.25s ease; }
+  .page-title { font-size: 32px; font-weight: 750; letter-spacing: -0.02em; margin: 0 0 3px; color: var(--ink); }
+  .page-subtitle { font-size: 12.5px; color: var(--ink-muted); margin: 0 0 6px; }
+
+  .stat-row { display: flex; gap: 10px; padding: 14px 20px 4px; }
+  .stat-card { flex: 1; background: var(--card); border-radius: var(--radius-md); padding: 14px 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+  .stat-value { font-size: 22px; font-weight: 750; letter-spacing: -0.02em; color: var(--accent); transition: color 0.25s ease; font-variant-numeric: tabular-nums; }
+  .stat-label { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+
+  /* Date navigator (workout page) */
+  .date-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 14px 20px 4px;
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    padding: 12px 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .date-nav-btn {
+    width: 38px; height: 38px; border-radius: 50%;
+    border: none; background: var(--accent-soft); color: var(--accent);
+    font-size: 19px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: transform 0.1s ease;
+  }
+  .date-nav-btn:active { transform: scale(0.9); }
+  .date-nav-center { text-align: center; flex: 1; }
+  .date-nav-type { font-size: 17px; font-weight: 700; color: var(--ink); }
+  .date-nav-date { font-size: 12px; color: var(--ink-muted); margin-top: 1px; }
+  .today-row { text-align: center; margin: 6px 20px 0; }
+  .today-btn {
+    display: inline-block; font-size: 12px; font-weight: 600; color: var(--accent);
+    background: none; border: none; padding: 4px 8px; cursor: pointer;
+  }
+
+  .chart-card { margin: 14px 20px 4px; background: var(--card); border-radius: var(--radius-lg); padding: 16px 14px 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+  .chart-head { display: flex; justify-content: space-between; align-items: center; padding: 0 4px 10px; }
+  .chart-title { font-size: 15px; font-weight: 650; color: var(--ink); }
+  .chart-sub { font-size: 12px; color: var(--ink-muted); }
+  .chart-svg-wrap { position: relative; width: 100%; }
+  .chart-tooltip {
+    position: absolute; background: var(--tooltip-bg); color: #fff; font-size: 11.5px; padding: 5px 9px; border-radius: 8px;
+    pointer-events: none; transform: translate(-50%, -115%); white-space: nowrap; opacity: 0; transition: opacity 0.12s ease;
+    font-variant-numeric: tabular-nums;
+  }
+  .chart-tooltip.show { opacity: 1; }
+  .bar-rect { transition: opacity 0.15s ease; cursor: pointer; }
+  .bar-rect:active { opacity: 0.65; }
+
+  .form-card { margin: 14px 20px 4px; background: var(--card); border-radius: var(--radius-lg); padding: 16px 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+  .form-title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .form-title { font-size: 15px; font-weight: 650; color: var(--ink); margin: 0; }
+  .form-toggle-btn { border: none; background: var(--accent-soft); color: var(--accent); font-size: 12.5px; font-weight: 650; padding: 7px 12px; border-radius: 999px; cursor: pointer; }
+  .list-save-btn {
+    border: none; background: var(--accent-soft); color: var(--accent); font-size: 12.5px; font-weight: 650;
+    padding: 6px 11px; border-radius: 999px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
+  }
+  .list-save-btn svg { width: 13px; height: 13px; }
+  .list-save-btn:active { opacity: 0.7; }
+
+  /* ---- Weekly plan (cycle) editor ---- */
+  .cycle-row { display: flex; align-items: center; gap: 6px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+  .cycle-row:last-child { border-bottom: none; }
+  .cycle-row-num { font-size: 11.5px; color: var(--ink-faint); width: 15px; text-align: center; flex-shrink: 0; }
+  .cycle-row input {
+    flex: 1; min-width: 0; border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px;
+    font-size: 13.5px; font-family: inherit; color: var(--ink); background: var(--bg);
+  }
+  .cycle-row-btn { border: none; background: none; color: var(--ink-faint); font-size: 15px; padding: 4px 5px; cursor: pointer; flex-shrink: 0; line-height: 1; }
+  .cycle-row-btn:active { color: var(--ink); }
+  .cycle-row-btn:disabled { opacity: 0.3; }
+  .cycle-row-btn.danger { color: var(--danger); font-size: 17px; }
+  .field-row { display: flex; gap: 10px; margin-bottom: 10px; }
+  .field { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 11.5px; color: var(--ink-muted); font-weight: 600; }
+  .field input, .field select {
+    border: 1px solid var(--border); background: var(--bg); border-radius: var(--radius-sm); padding: 10px 10px;
+    font-size: 14.5px; font-family: inherit; color: var(--ink); outline: none; width: 100%;
+  }
+  .field input:focus, .field select:focus { border-color: var(--accent); }
+  .primary-btn {
+    width: 100%; border: none; background: var(--accent); color: #fff; font-size: 15px; font-weight: 650;
+    padding: 12px; border-radius: var(--radius-md); cursor: pointer; margin-top: 4px; transition: transform 0.08s ease;
+  }
+  .primary-btn:active { transform: scale(0.98); }
+
+  .list-card { margin: 14px 20px 4px; background: var(--card); border-radius: var(--radius-lg); overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+  .list-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px 8px; }
+  .list-title { font-size: 15px; font-weight: 650; color: var(--ink); }
+  .list-row { display: flex; align-items: center; justify-content: space-between; padding: 11px 16px; border-top: 1px solid var(--border); }
+  .list-row-main { display: flex; flex-direction: column; gap: 1px; flex: 1; }
+  .list-row-title { font-size: 14px; font-weight: 550; color: var(--ink); }
+  .list-row-title.done { color: var(--ink-faint); text-decoration: line-through; }
+  .list-row-sub { font-size: 12px; color: var(--ink-muted); }
+  .list-row-value { font-size: 14.5px; font-weight: 650; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .list-del { border: none; background: none; color: var(--ink-faint); font-size: 17px; padding: 4px 6px; margin-left: 6px; cursor: pointer; line-height: 1; }
+  .empty-row { padding: 22px 16px; text-align: center; color: var(--ink-faint); font-size: 13px; }
+
+  .checkbox {
+    flex: 0 0 auto; width: 22px; height: 22px; margin-right: 12px; border-radius: 7px;
+    border: 1.6px solid var(--ink-faint); background: var(--card); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  }
+  .checkbox:active { transform: scale(0.88); }
+  .checkbox.checked { background: var(--accent); border-color: var(--accent); }
+  .checkbox svg { width: 13px; height: 13px; display: none; }
+  .checkbox.checked svg { display: block; }
+  .exercise-row { display: flex; align-items: center; padding: 12px 16px; border-top: 1px solid var(--border); }
+  .exercise-row:first-child { border-top: none; }
+  .exercise-main { flex: 1; }
+  .exercise-name { font-size: 14.5px; font-weight: 550; color: var(--ink); }
+  .exercise-name.done { color: var(--ink-faint); text-decoration: line-through; }
+  .exercise-sub { font-size: 12px; color: var(--ink-muted); margin-top: 1px; }
+
+  .tabbar {
+    position: fixed; bottom: 0; left: 0; right: 0; max-width: 480px; margin: 0 auto;
+    background: rgba(255,255,255,0.82); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-top: 0.5px solid rgba(60,60,67,0.29); display: flex;
+    padding: 8px 6px calc(8px + env(safe-area-inset-bottom, 6px)); z-index: 50;
+  }
+  .tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: none; padding: 4px 2px; cursor: pointer; color: var(--ink-faint); transition: color 0.2s ease, transform 0.15s ease; }
+  .tab-btn.active { transform: translateY(-1px); }
+  .tab-btn svg { width: 25px; height: 25px; transition: transform 0.2s cubic-bezier(.34,1.56,.64,1); }
+  .tab-btn.active svg { transform: scale(1.08); }
+  .tab-label { font-size: 10.5px; font-weight: 600; }
+
+  .page { display: none; animation: pageIn 0.28s cubic-bezier(.25,.8,.35,1); }
+  .page.active { display: block; }
+  @keyframes pageIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ---- History month cards ---- */
+  #historyMonthList { padding-top: 14px; }
+  .month-tab {
+    margin: 0 20px 10px;
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    border: 0.5px solid var(--border);
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    transition: transform 0.08s ease;
+  }
+  .month-tab:active { transform: scale(0.985); }
+  .month-tab.current { border: 1.5px solid #FF9500; }
+  .month-tab-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .month-tab-title { font-size: 15px; font-weight: 650; color: var(--ink); }
+  .month-tab-chevron { color: var(--ink-faint); font-size: 16px; }
+  .month-mini-row { display: flex; gap: 7px; }
+  .month-mini-box { flex: 1; background: var(--bg); border-radius: 10px; padding: 9px 6px; text-align: center; color: var(--ink-faint); }
+  .month-mini-box svg { width: 14px; height: 14px; }
+  .month-mini-value { font-size: 13.5px; font-weight: 700; margin: 3px 0 0; }
+  .month-mini-label { font-size: 10px; color: var(--ink-muted); margin-top: 1px; }
+
+  /* ---- Icon badges ---- */
+  .icon-badge { width: 36px; height: 36px; border-radius: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .icon-badge svg { width: 18px; height: 18px; }
+  .icon-badge.orange { background: var(--accent-soft); color: #FF9500; }
+  .icon-badge.green { background: var(--m-green-soft); color: var(--m-green); }
+  .icon-badge.blue { background: var(--m-blue-soft); color: var(--m-blue); }
+  .icon-badge.red { background: var(--m-red-soft); color: var(--m-red); }
+  .page-header-row { display: flex; justify-content: space-between; align-items: flex-start; }
+
+  /* ---- Back button + recap rows (month detail / month archive) ---- */
+  .back-btn { border: none; background: none; color: var(--ink); font-size: 24px; padding: 2px 10px 2px 0; cursor: pointer; line-height: 1; }
+  .recap-row {
+    margin: 0 20px 10px;
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    border: 0.5px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    transition: transform 0.08s ease;
+  }
+  .recap-row:active { transform: scale(0.985); }
+  .recap-left { display: flex; align-items: center; gap: 10px; }
+  .recap-title { font-size: 14.5px; font-weight: 650; color: var(--ink); margin: 0; }
+  .recap-sub { font-size: 11.5px; color: var(--ink-muted); margin: 1px 0 0; }
+  .recap-right { display: flex; align-items: center; gap: 6px; }
+  .recap-value { font-size: 18px; font-weight: 700; margin: 0; font-variant-numeric: tabular-nums; }
+  .recap-chevron { color: var(--ink-faint); font-size: 17px; }
+
+  .status-line { font-size: 11.5px; color: var(--danger); padding: 2px 24px 0; min-height: 14px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ WORKOUT PAGE ============ -->
+  <div class="page active" id="page-workout" data-accent="blue">
+    <div class="page-header">
+      <p class="page-eyebrow">Track</p>
+      <h1 class="page-title">Workout</h1>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-value" id="wtTodayStat">—</div><div class="stat-label">Today</div></div>
+      <div class="stat-card"><div class="stat-value" id="wtWeekStat">—</div><div class="stat-label">Last 7 days</div></div>
+      <div class="stat-card"><div class="stat-value" id="wtMonthStat">—</div><div class="stat-label">This month</div></div>
+    </div>
+
+    <div class="date-nav">
+      <button class="date-nav-btn" id="wtPrevDay">‹</button>
+      <div class="date-nav-center">
+        <div class="date-nav-type" id="wtDayType">—</div>
+        <div class="date-nav-date" id="wtDayDate">—</div>
+      </div>
+      <button class="date-nav-btn" id="wtNextDay">›</button>
+    </div>
+    <div class="today-row"><button class="today-btn" id="wtTodayBtn">Jump to today</button></div>
+
+    <div class="form-card">
+      <div class="form-title-row">
+        <p class="form-title">Weekly plan</p>
+        <button class="form-toggle-btn" id="wtCycleToggle">Edit plan</button>
+      </div>
+      <div id="wtCycleForm" style="display:none; margin-top:10px;">
+        <div id="wtCycleRows"></div>
+        <button class="form-toggle-btn" id="wtCycleAddDay" style="margin-top:10px;">+ Add day</button>
+        <button class="primary-btn" id="wtCycleSaveBtn" style="margin-top:10px;">Save plan</button>
+        <div class="status-line" id="wtCycleStatus"></div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-head">
+        <span class="chart-title">This month, by day</span>
+        <span class="chart-sub">tap a bar</span>
+      </div>
+      <div class="chart-svg-wrap" id="wtChartWrap"></div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-title-row">
+        <p class="form-title" id="wtExerciseTitle">Exercises</p>
+        <button class="form-toggle-btn" id="wtAddToggle">+ Add exercise</button>
+      </div>
+      <div id="wtAddForm" style="display:none; margin-top:10px;">
+        <div class="field-row">
+          <div class="field"><label>Exercise name</label><input type="text" id="wtExName" placeholder="e.g. Wall sit" maxlength="60"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Sets</label><input type="number" id="wtExSets" placeholder="3" inputmode="numeric"></div>
+          <div class="field"><label>Reps</label><input type="text" id="wtExReps" placeholder="e.g. 12 or max"></div>
+        </div>
+        <button class="primary-btn" id="wtExAddBtn">Add to this day</button>
+        <div class="status-line" id="wtExStatus"></div>
+      </div>
+    </div>
+
+    <div class="list-card">
+      <div class="list-head">
+        <span class="list-title">Today's list</span>
+        <button class="list-save-btn" id="wtSaveTemplateBtn" title="Save this list as the default for this day type">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+          Save
+        </button>
+      </div>
+      <div id="wtExerciseList"></div>
+      <div class="status-line" id="wtSaveTemplateStatus" style="padding-bottom:10px;"></div>
+    </div>
+  </div>
+
+  <!-- ============ NUTRITION PAGE ============ -->
+  <div class="page" id="page-nutrition" data-accent="green">
+    <div class="page-header">
+      <p class="page-eyebrow">Track</p>
+      <h1 class="page-title">Nutrition</h1>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-value" id="nuTodayProtein">—</div><div class="stat-label">Today protein</div></div>
+      <div class="stat-card"><div class="stat-value" id="nuTodayCals">—</div><div class="stat-label">Today calories</div></div>
+      <div class="stat-card"><div class="stat-value" id="nuDaysLogged">—</div><div class="stat-label">Days this month</div></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-head">
+        <span class="chart-title">Protein &amp; Calories — this month</span>
+        <span class="chart-sub">tap a bar</span>
+      </div>
+      <div class="chart-svg-wrap" id="nuChartWrap"></div>
+    </div>
+
+    <div class="form-card">
+      <p class="form-title">Log today's totals</p>
+      <div class="field-row">
+        <div class="field"><label>Date</label><input type="date" id="nuDate"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Protein (g)</label><input type="number" id="nuProtein" placeholder="0" inputmode="numeric"></div>
+        <div class="field"><label>Calories</label><input type="number" id="nuCals" placeholder="0" inputmode="numeric"></div>
+      </div>
+      <button class="primary-btn" id="nuAddBtn">Save</button>
+      <div class="status-line" id="nuStatus"></div>
+    </div>
+
+    <div class="list-card">
+      <div class="list-head"><span class="list-title">Recent entries</span></div>
+      <div id="nuList"></div>
+    </div>
+  </div>
+
+  <!-- ============ HISTORY PAGE ============ -->
+  <div class="page" id="page-history" data-accent="orange">
+    <div class="page-header page-header-row">
+      <div>
+        <p class="page-eyebrow">Track</p>
+        <h1 class="page-title">History</h1>
+      </div>
+      <div class="icon-badge orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></div>
+    </div>
+
+    <div id="historyMonthList"></div>
+  </div>
+
+  <!-- ============ MONTH DETAIL PAGE (opened from a History month card) ============ -->
+  <div class="page" id="page-month-detail" data-accent="orange">
+    <div class="page-header" style="display:flex; align-items:center; gap:8px;">
+      <button class="back-btn" id="monthDetailBackBtn">‹</button>
+      <div>
+        <p class="page-eyebrow" id="mdEyebrow">—</p>
+        <h1 class="page-title">Month detail</h1>
+      </div>
+    </div>
+    <div id="monthDetailRecap" style="padding-top: 6px;"></div>
+  </div>
+
+  <!-- ============ MONTH ARCHIVE PAGE (read-only view of one metric for one month) ============ -->
+  <div class="page" id="page-month-archive" data-accent="orange">
+    <div class="page-header" style="display:flex; align-items:center; gap:8px;">
+      <button class="back-btn" id="archiveBackBtn">‹</button>
+      <div>
+        <p class="page-eyebrow" id="archiveEyebrow">—</p>
+        <h1 class="page-title" id="archiveTitle">Protein</h1>
+      </div>
+    </div>
+
+    <div class="stat-row" id="archiveStatRow"></div>
+
+    <div class="chart-card">
+      <div class="chart-head">
+        <span class="chart-title">By day</span>
+        <span class="chart-sub">tap a bar</span>
+      </div>
+      <div class="chart-svg-wrap" id="archiveChartWrap"></div>
+    </div>
+
+    <div class="list-card">
+      <div class="list-head"><span class="list-title">All entries</span></div>
+      <div id="archiveList"></div>
+    </div>
+  </div>
+
+  <div class="tabbar">
+    <button class="tab-btn active" data-page="workout">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5l11 11M4 9l3-3 3 3-3 3-3-3zM14 19l3-3 3 3-3 3-3-3zM17 4l1.5 1.5L17 7l-1.5-1.5L17 4zM7 17l1.5 1.5L7 20l-1.5-1.5L7 17z"/></svg>
+      <span class="tab-label">Workout</span>
+    </button>
+    <button class="tab-btn" data-page="nutrition">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v6M8 3v3a4 4 0 0 0 8 0V3M8 9v12M16 9c-2 0-3 1.5-3 4s1 4 3 4"/></svg>
+      <span class="tab-label">Nutrition</span>
+    </button>
+    <button class="tab-btn" data-page="history">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
+      <span class="tab-label">History</span>
+    </button>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  const ACCENTS = {
+    blue:   { accent: "#0A84FF", soft: "#E8F2FF" },
+    green:  { accent: "#30B158", soft: "#E7F8EC" },
+    red:    { accent: "#FF3B30", soft: "#FFEBEA" },
+    orange: { accent: "#FF9500", soft: "#FFF3E0" },
+  };
+
+  // ---- Storage: localStorage first (works standalone/APK), Claude window.storage fallback ----
+  const Store = {
+    mode: "none",
+    init(){
+      try { localStorage.setItem("__wt_probe__","1"); localStorage.removeItem("__wt_probe__"); this.mode = "local"; }
+      catch(e){ this.mode = (typeof window.storage !== "undefined") ? "remote" : "none"; }
+    },
+    async get(key){
+      if (this.mode === "local"){ const v = localStorage.getItem(key); return v ? { value: v } : null; }
+      if (this.mode === "remote"){ try { return await window.storage.get(key); } catch(e){ return null; } }
+      return null;
+    },
+    async set(key, value){
+      if (this.mode === "local"){ try { localStorage.setItem(key, value); return true; } catch(e){ return false; } }
+      if (this.mode === "remote"){ try { await window.storage.set(key, value, false); return true; } catch(e){ return false; } }
+      return false;
+    }
+  };
+
+  function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4); }
+  function todayStr(){
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+  }
+  function currentYearMonth(){
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");
+  }
+  function fmtDate(s){
+    const d = new Date(s + "T00:00:00");
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
+  function fmtMonth(ym){
+    const d = new Date(ym + "-01T00:00:00");
+    return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  }
+  function addDays(dateStr, n){
+    const d = new Date(dateStr + "T00:00:00");
+    d.setDate(d.getDate() + n);
+    return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+  }
+
+  // ---- Sound effects ----
+  let audioCtx = null;
+  function getCtx(){
+    if (!audioCtx){ try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ return null; } }
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    return audioCtx;
+  }
+  function playTone(freq, duration, type){
+    const ctx = getCtx(); if (!ctx) return;
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.type = type || "sine"; osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.connect(gain).connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + duration + 0.02);
+  }
+  const TAB_TONES = { workout: [523.25, 659.25], nutrition: [392.0, 523.25], history: [349.23, 440.0] };
+  function playTabSound(name){
+    const t = TAB_TONES[name] || [440];
+    playTone(t[0], 0.09, "sine");
+    if (t[1]) setTimeout(() => playTone(t[1], 0.11, "sine"), 60);
+  }
+  function playAddSound(){ playTone(660, 0.06, "triangle"); setTimeout(() => playTone(880, 0.09, "triangle"), 50); }
+  function playCheckSound(){ playTone(740, 0.07, "sine"); }
+  function playUncheckSound(){ playTone(420, 0.07, "sine"); }
+  function playDeleteSound(){ playTone(300, 0.1, "sawtooth"); }
+  function playClickSound(){ playTone(520, 0.045, "sine"); }
+
+  // ---- Workout cycle + defaults ----
+  const DEFAULT_CYCLE = ["Push Day","Pull Day","Leg Day","Rest Day","Full Body Day","Rest Day"];
+  let cycleDays = DEFAULT_CYCLE.slice(); // user-editable weekly rotation — order + names; persisted and reused every cycle, indefinitely
+  const REF_DATE = new Date(2026, 8, 14); // Sep 14, 2026 = cycle index 0 (anchor point the rotation counts from)
+  function dayTypeForDate(dateStr){
+    const d = new Date(dateStr + "T00:00:00");
+    const diffDays = Math.round((d - REF_DATE) / 86400000);
+    const n = cycleDays.length || 1;
+    const idx = ((diffDays % n) + n) % n;
+    return cycleDays[idx] || "Rest Day";
+  }
+  const DEFAULT_EXERCISES = {
+    "Push Day": [
+      { name: "Incline push-ups (hands elevated, table/bed pe)", setsReps: "3 x 10" },
+      { name: "Normal push-ups", setsReps: "3 x 10" },
+      { name: "Decline push-ups (feet elevated)", setsReps: "3 x 8" },
+      { name: "Diamond push-ups (hands close, diamond shape)", setsReps: "3 x 8" },
+      { name: "Pike push-ups (hips up, V-shape)", setsReps: "3 x 8" },
+      { name: "Lateral raise (bag/bottle se)", setsReps: "3 x 10" },
+    ],
+    "Pull Day": [
+      { name: "Negative pull-ups (jump up, slow down)", setsReps: "3 x 5" },
+      { name: "Inverted/Australian rows (table ke neeche)", setsReps: "4 x 10" },
+      { name: "Doorway rows (towel/dupatta use karke)", setsReps: "3 x 12" },
+      { name: "Chin-up dead hang (bar/door pe latak jao)", setsReps: "3 x max" },
+    ],
+    "Leg Day": [
+      { name: "Squats", setsReps: "4 x 15" },
+      { name: "Walking lunges (each leg)", setsReps: "3 x 12" },
+      { name: "Glute bridges", setsReps: "3 x 15-20" },
+      { name: "Calf raises", setsReps: "3 x 20" },
+      { name: "Leg raises", setsReps: "3 x 15-20" },
+      { name: "Plank", setsReps: "3 x 45-60 sec" },
+    ],
+    "Full Body Day": [
+      { name: "Squats", setsReps: "3 x 15" },
+      { name: "Normal push-ups", setsReps: "3 x 10-15" },
+      { name: "Inverted/Australian rows", setsReps: "3 x 10-15" },
+      { name: "Pike push-ups", setsReps: "2 x 8-12" },
+      { name: "Negative pull-ups", setsReps: "2 x 5-6" },
+      { name: "Glute bridges", setsReps: "3 x 15" },
+      { name: "Plank", setsReps: "3 x 45 sec" },
+    ],
+    "Rest Day": [
+      { name: "Neck rolls", setsReps: "2 x 10 each side" },
+      { name: "Shoulder rolls", setsReps: "2 x 10" },
+      { name: "Cat-cow stretch", setsReps: "2 x 10" },
+      { name: "Standing hamstring stretch", setsReps: "30 sec each leg" },
+      { name: "Quad stretch", setsReps: "30 sec each leg" },
+      { name: "Seated spinal twist", setsReps: "30 sec each side" },
+    ],
+  };
+
+  let workoutData = {};   // { date: { exercises: [{id,name,setsReps,done,custom}] } }
+  let customByType = {};  // { "Pull Day": [{id,name,setsReps}], ... } — custom exercises the user added, reused every time that day type comes around
+  let nutritionEntries = []; // [{id,date,protein,calories}]
+  let dayTypeTemplates = {}; // { "Push Day": [{name,setsReps}], ... } — user-saved exercise list that permanently replaces the built-in default for that day type
+
+  function getDayRecord(dateStr){
+    if (!workoutData[dateStr]){
+      const type = dayTypeForDate(dateStr);
+      const template = dayTypeTemplates[type];
+      let combined;
+      if (template && template.length){
+        combined = template;
+      } else {
+        const defaults = DEFAULT_EXERCISES[type] || [];
+        const customs = customByType[type] || [];
+        combined = defaults.concat(customs);
+      }
+      workoutData[dateStr] = { exercises: combined.map(e => ({ id: uid(), name: e.name, setsReps: e.setsReps, done: false, custom: !!e.custom })) };
+    }
+    return workoutData[dateStr];
+  }
+  function saveWorkoutData(){ Store.set("wt-workouts-v1", JSON.stringify(workoutData)); }
+  function saveCustomByType(){ Store.set("wt-custom-by-type-v1", JSON.stringify(customByType)); }
+  function saveNutrition(){ Store.set("wt-nutrition-v1", JSON.stringify(nutritionEntries)); }
+  function saveDayTypeTemplates(){ Store.set("wt-day-type-templates-v1", JSON.stringify(dayTypeTemplates)); }
+  function saveCycleDays(){ Store.set("wt-cycle-days-v1", JSON.stringify(cycleDays)); }
+
+  async function loadAll(){
+    Store.init();
+    const [w, n, c, t, cy] = await Promise.all([Store.get("wt-workouts-v1"), Store.get("wt-nutrition-v1"), Store.get("wt-custom-by-type-v1"), Store.get("wt-day-type-templates-v1"), Store.get("wt-cycle-days-v1")]);
+    workoutData = (w && w.value) ? JSON.parse(w.value) : {};
+    nutritionEntries = (n && n.value) ? JSON.parse(n.value) : [];
+    customByType = (c && c.value) ? JSON.parse(c.value) : {};
+    dayTypeTemplates = (t && t.value) ? JSON.parse(t.value) : {};
+    const parsedCycle = (cy && cy.value) ? JSON.parse(cy.value) : null;
+    cycleDays = (parsedCycle && parsedCycle.length) ? parsedCycle : DEFAULT_CYCLE.slice();
+  }
+
+
+  // ---- Tab navigation ----
+  const tabBtns = document.querySelectorAll(".tab-btn");
+  const pages = document.querySelectorAll(".page");
+  let activePage = "workout";
+  let subPage = null; // null | {view:"detail", ym} | {view:"archive", ym, kind}
+  function showOnly(id){
+    pages.forEach(p => p.classList.toggle("active", p.id === id));
+  }
+  function setAccent(name){
+    const c = ACCENTS[name];
+    document.documentElement.style.setProperty("--accent", c.accent);
+    document.documentElement.style.setProperty("--accent-soft", c.soft);
+  }
+  function goPage(name){
+    subPage = null;
+    activePage = name;
+    showOnly("page-" + name);
+    const accentName = document.getElementById("page-" + name).dataset.accent;
+    setAccent(accentName);
+    tabBtns.forEach(b => { b.classList.toggle("active", b.dataset.page === name); b.style.color = (b.dataset.page === name) ? ACCENTS[accentName].accent : "#C7C7CC"; });
+    renderAll();
+  }
+  tabBtns.forEach(b => b.addEventListener("click", () => { playTabSound(b.dataset.page); goPage(b.dataset.page); }));
+
+  function openMonthDetail(ym){
+    subPage = { view: "detail", ym };
+    showOnly("page-month-detail");
+    setAccent("orange");
+    renderMonthDetail(ym);
+  }
+  function openMonthArchive(ym, kind){
+    subPage = { view: "archive", ym, kind };
+    showOnly("page-month-archive");
+    setAccent(METRIC_COLORS[kind]);
+    renderMonthArchive(ym, kind);
+  }
+  document.getElementById("monthDetailBackBtn").addEventListener("click", () => {
+    playClickSound();
+    goPage("history");
+  });
+  document.getElementById("archiveBackBtn").addEventListener("click", () => {
+    playClickSound();
+    if (subPage && subPage.ym) openMonthDetail(subPage.ym); else goPage("history");
+  });
+
+  // ---- Generic bar chart ----
+  function renderBarChart(containerId, labels, values, colorVar, valueFormatter){
+    const container = document.getElementById(containerId);
+    const w = container.clientWidth || 320;
+    const h = 140;
+    const padBottom = 20;
+    const n = values.length;
+    const gap = 4;
+    const barW = Math.max(3, (w - gap * (n - 1)) / n);
+    const maxV = Math.max(1, ...values);
+    let bars = "";
+    for (let i = 0; i < n; i++){
+      const bh = Math.max(2, (values[i] / maxV) * (h - padBottom - 6));
+      const x = i * (barW + gap);
+      const y = (h - padBottom) - bh;
+      const op = values[i] > 0 ? (0.4 + 0.6 * (values[i] / maxV)) : 0.15;
+      bars += `<rect class="bar-rect" data-i="${i}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="${Math.min(4, barW/3).toFixed(1)}" fill="var(${colorVar})" opacity="${op.toFixed(2)}"></rect>`;
+    }
+    bars += `<line x1="0" y1="${h-padBottom}" x2="${w}" y2="${h-padBottom}" stroke="#E5E5EA" stroke-width="1"/>`;
+    container.innerHTML = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="display:block;">${bars}</svg><div class="chart-tooltip" id="${containerId}-tip"></div>`;
+    const tip = document.getElementById(containerId + "-tip");
+    container.querySelectorAll(".bar-rect").forEach(rect => {
+      rect.addEventListener("click", () => {
+        const i = parseInt(rect.dataset.i, 10);
+        const rectBox = rect.getBoundingClientRect();
+        const contBox = container.getBoundingClientRect();
+        tip.textContent = labels[i] + " · " + (valueFormatter ? valueFormatter(values[i]) : values[i]);
+        tip.style.left = (rectBox.left - contBox.left + rectBox.width/2) + "px";
+        tip.style.top = (rectBox.top - contBox.top) + "px";
+        tip.classList.add("show");
+        clearTimeout(tip._t);
+        tip._t = setTimeout(() => tip.classList.remove("show"), 1800);
+      });
+    });
+  }
+
+  // ---- Combined nutrition bar chart: one bar per day, tap shows protein + calories together ----
+  function renderNutritionChart(containerId, labels, proteinValues, calsValues){
+    const container = document.getElementById(containerId);
+    const w = container.clientWidth || 320;
+    const h = 140;
+    const padBottom = 20;
+    const n = calsValues.length;
+    const gap = 4;
+    const barW = Math.max(3, (w - gap * (n - 1)) / n);
+    const maxV = Math.max(1, ...calsValues);
+    let bars = "";
+    for (let i = 0; i < n; i++){
+      const bh = Math.max(2, (calsValues[i] / maxV) * (h - padBottom - 6));
+      const x = i * (barW + gap);
+      const y = (h - padBottom) - bh;
+      const op = calsValues[i] > 0 ? (0.4 + 0.6 * (calsValues[i] / maxV)) : 0.15;
+      bars += `<rect class="bar-rect" data-i="${i}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="${Math.min(4, barW/3).toFixed(1)}" fill="var(--accent)" opacity="${op.toFixed(2)}"></rect>`;
+    }
+    bars += `<line x1="0" y1="${h-padBottom}" x2="${w}" y2="${h-padBottom}" stroke="#E5E5EA" stroke-width="1"/>`;
+    container.innerHTML = `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" style="display:block;">${bars}</svg><div class="chart-tooltip" id="${containerId}-tip"></div>`;
+    const tip = document.getElementById(containerId + "-tip");
+    container.querySelectorAll(".bar-rect").forEach(rect => {
+      rect.addEventListener("click", () => {
+        const i = parseInt(rect.dataset.i, 10);
+        const rectBox = rect.getBoundingClientRect();
+        const contBox = container.getBoundingClientRect();
+        tip.textContent = labels[i] + " · " + proteinValues[i] + "g protein · " + calsValues[i] + " cal";
+        tip.style.left = (rectBox.left - contBox.left + rectBox.width/2) + "px";
+        tip.style.top = (rectBox.top - contBox.top) + "px";
+        tip.classList.add("show");
+        clearTimeout(tip._t);
+        tip._t = setTimeout(() => tip.classList.remove("show"), 1800);
+      });
+    });
+  }
+
+  // Custom CSS var color for orange/blue/green bars since they're set dynamically
+  const styleTag = document.createElement("style");
+  styleTag.textContent = `:root{ --chart-color: var(--accent); }`;
+  document.head.appendChild(styleTag);
+
+  // ================= WORKOUT PAGE =================
+  let selectedWorkoutDate = todayStr();
+
+  function dayCompletionStats(dateStr){
+    const rec = getDayRecord(dateStr);
+    const total = rec.exercises.length;
+    const done = rec.exercises.filter(e => e.done).length;
+    return { total, done, complete: total > 0 && done === total };
+  }
+
+  function renderWorkoutStats(){
+    const today = todayStr();
+    const t = dayCompletionStats(today);
+    document.getElementById("wtTodayStat").textContent = t.total ? (t.done + "/" + t.total) : "—";
+
+    let weekDone = 0;
+    for (let i = 0; i < 7; i++){
+      const d = addDays(today, -i);
+      if (dayCompletionStats(d).complete) weekDone++;
+    }
+    document.getElementById("wtWeekStat").textContent = weekDone;
+
+    const ym = currentYearMonth();
+    let monthDone = 0;
+    Object.keys(workoutData).forEach(d => { if (d.startsWith(ym) && dayCompletionStats(d).complete) monthDone++; });
+    document.getElementById("wtMonthStat").textContent = monthDone;
+  }
+
+  function renderWorkoutChart(){
+    const now = new Date();
+    const ym = currentYearMonth();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+    const labels = [], values = [];
+    for (let d = 1; d <= daysInMonth; d++){
+      const dateStr = ym + "-" + String(d).padStart(2,"0");
+      const rec = workoutData[dateStr];
+      const doneCount = rec ? rec.exercises.filter(e => e.done).length : 0;
+      labels.push(fmtDate(dateStr));
+      values.push(doneCount);
+    }
+    renderBarChart("wtChartWrap", labels, values, "--accent", v => v + " done");
+  }
+
+  function renderWorkoutDay(){
+    document.getElementById("wtDayType").textContent = dayTypeForDate(selectedWorkoutDate);
+    const d = new Date(selectedWorkoutDate + "T00:00:00");
+    document.getElementById("wtDayDate").textContent = d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+    document.getElementById("wtExerciseTitle").textContent = (selectedWorkoutDate === todayStr() ? "Today's" : fmtDate(selectedWorkoutDate)) + " exercises";
+    document.getElementById("wtTodayBtn").style.display = (selectedWorkoutDate === todayStr()) ? "none" : "inline-block";
+
+    const rec = getDayRecord(selectedWorkoutDate);
+    const listEl = document.getElementById("wtExerciseList");
+    if (!rec.exercises.length){
+      listEl.innerHTML = `<div class="empty-row">No exercises for this day.</div>`;
+    } else {
+      listEl.innerHTML = rec.exercises.map(ex => `
+        <div class="exercise-row">
+          <div class="checkbox${ex.done ? " checked" : ""}" data-id="${ex.id}">
+            <svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5L6.2 11.5L13 4.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="exercise-main">
+            <div class="exercise-name${ex.done ? " done" : ""}">${ex.name}</div>
+            <div class="exercise-sub">${ex.setsReps}</div>
+          </div>
+          <button class="list-del" data-del="${ex.id}">&times;</button>
+        </div>
+      `).join("");
+      listEl.querySelectorAll(".checkbox").forEach(box => box.addEventListener("click", () => toggleExercise(box.dataset.id)));
+      listEl.querySelectorAll("[data-del]").forEach(btn => btn.addEventListener("click", () => deleteExercise(btn.dataset.del)));
+    }
+  }
+
+  function toggleExercise(id){
+    const rec = getDayRecord(selectedWorkoutDate);
+    const ex = rec.exercises.find(e => e.id === id);
+    if (ex){
+      ex.done = !ex.done;
+      ex.done ? playCheckSound() : playUncheckSound();
+      saveWorkoutData();
+      renderWorkoutDay(); renderWorkoutStats(); renderWorkoutChart();
+    }
+  }
+  function deleteExercise(id){
+    const rec = getDayRecord(selectedWorkoutDate);
+    rec.exercises = rec.exercises.filter(e => e.id !== id);
+    playDeleteSound();
+    saveWorkoutData();
+    renderWorkoutDay(); renderWorkoutStats(); renderWorkoutChart();
+  }
+
+  document.getElementById("wtPrevDay").addEventListener("click", () => { selectedWorkoutDate = addDays(selectedWorkoutDate, -1); renderWorkoutDay(); });
+  document.getElementById("wtNextDay").addEventListener("click", () => { selectedWorkoutDate = addDays(selectedWorkoutDate, 1); renderWorkoutDay(); });
+  document.getElementById("wtTodayBtn").addEventListener("click", () => { selectedWorkoutDate = todayStr(); renderWorkoutDay(); });
+
+  document.getElementById("wtSaveTemplateBtn").addEventListener("click", () => {
+    const type = dayTypeForDate(selectedWorkoutDate); // the real cycle type — exercises stay tied to the pattern, not a renamed label
+    const rec = getDayRecord(selectedWorkoutDate);
+    const statusEl = document.getElementById("wtSaveTemplateStatus");
+    if (!rec.exercises.length){
+      statusEl.style.color = "var(--danger)";
+      statusEl.textContent = "Add at least one exercise before saving.";
+      return;
+    }
+    dayTypeTemplates[type] = rec.exercises.map(e => ({ name: e.name, setsReps: e.setsReps }));
+    saveDayTypeTemplates();
+    playAddSound();
+    statusEl.style.color = "var(--accent)";
+    statusEl.textContent = `Saved — every future ${type} will start with this list.`;
+    setTimeout(() => { statusEl.textContent = ""; }, 2500);
+  });
+
+  // ---- Weekly plan (cycle) editor: reorder/rename/add/remove the repeating rotation ----
+  let cycleDraft = null; // working copy while the editor is open; committed to cycleDays only on Save
+
+  function renderCycleRows(){
+    const wrap = document.getElementById("wtCycleRows");
+    wrap.innerHTML = cycleDraft.map((name, i) => `
+      <div class="cycle-row" data-i="${i}">
+        <span class="cycle-row-num">${i+1}</span>
+        <input type="text" class="cycle-name-input" data-i="${i}" value="${name.replace(/"/g,"&quot;")}" maxlength="24" placeholder="Day name">
+        <button class="cycle-row-btn" data-up="${i}" ${i === 0 ? "disabled" : ""}>↑</button>
+        <button class="cycle-row-btn" data-down="${i}" ${i === cycleDraft.length - 1 ? "disabled" : ""}>↓</button>
+        <button class="cycle-row-btn danger" data-remove="${i}" ${cycleDraft.length <= 1 ? "disabled" : ""}>&times;</button>
+      </div>
+    `).join("");
+    wrap.querySelectorAll(".cycle-name-input").forEach(inp => {
+      inp.addEventListener("input", () => { cycleDraft[+inp.dataset.i] = inp.value; });
+    });
+    wrap.querySelectorAll("[data-up]").forEach(btn => btn.addEventListener("click", () => {
+      const i = +btn.dataset.up;
+      if (i > 0){ [cycleDraft[i-1], cycleDraft[i]] = [cycleDraft[i], cycleDraft[i-1]]; renderCycleRows(); }
+    }));
+    wrap.querySelectorAll("[data-down]").forEach(btn => btn.addEventListener("click", () => {
+      const i = +btn.dataset.down;
+      if (i < cycleDraft.length - 1){ [cycleDraft[i+1], cycleDraft[i]] = [cycleDraft[i], cycleDraft[i+1]]; renderCycleRows(); }
+    }));
+    wrap.querySelectorAll("[data-remove]").forEach(btn => btn.addEventListener("click", () => {
+      if (cycleDraft.length > 1){ cycleDraft.splice(+btn.dataset.remove, 1); renderCycleRows(); }
+    }));
+  }
+
+  document.getElementById("wtCycleToggle").addEventListener("click", () => {
+    const form = document.getElementById("wtCycleForm");
+    const opening = form.style.display === "none";
+    form.style.display = opening ? "block" : "none";
+    if (opening){
+      cycleDraft = cycleDays.slice();
+      document.getElementById("wtCycleStatus").textContent = "";
+      renderCycleRows();
+    }
+  });
+
+  document.getElementById("wtCycleAddDay").addEventListener("click", () => {
+    cycleDraft.push("");
+    renderCycleRows();
+  });
+
+  document.getElementById("wtCycleSaveBtn").addEventListener("click", () => {
+    const statusEl = document.getElementById("wtCycleStatus");
+    const cleaned = cycleDraft.map(n => n.trim()).filter(n => n.length);
+    if (!cleaned.length){
+      statusEl.style.color = "var(--danger)";
+      statusEl.textContent = "Add at least one day.";
+      return;
+    }
+    cycleDays = cleaned;
+    saveCycleDays();
+    playAddSound();
+    statusEl.style.color = "var(--accent)";
+    statusEl.textContent = "Saved — every week now follows this plan.";
+    setTimeout(() => { statusEl.textContent = ""; }, 2500);
+    renderAll();
+  });
+
+  document.getElementById("wtAddToggle").addEventListener("click", () => {
+    const form = document.getElementById("wtAddForm");
+    form.style.display = (form.style.display === "none") ? "block" : "none";
+  });
+  document.getElementById("wtExAddBtn").addEventListener("click", () => {
+    const name = document.getElementById("wtExName").value.trim();
+    const sets = document.getElementById("wtExSets").value.trim();
+    const reps = document.getElementById("wtExReps").value.trim();
+    const statusEl = document.getElementById("wtExStatus");
+    if (!name){ statusEl.textContent = "Enter an exercise name."; return; }
+    const setsReps = (sets || reps) ? ((sets || "?") + " x " + (reps || "?")) : "—";
+    const type = dayTypeForDate(selectedWorkoutDate);
+    const rec = getDayRecord(selectedWorkoutDate);
+    rec.exercises.push({ id: uid(), name, setsReps, done: false, custom: true });
+    saveWorkoutData();
+    if (!customByType[type]) customByType[type] = [];
+    customByType[type].push({ name, setsReps });
+    saveCustomByType();
+    playAddSound();
+    statusEl.textContent = "";
+    document.getElementById("wtExName").value = "";
+    document.getElementById("wtExSets").value = "";
+    document.getElementById("wtExReps").value = "";
+    document.getElementById("wtAddForm").style.display = "none";
+    renderWorkoutDay(); renderWorkoutStats(); renderWorkoutChart();
+  });
+
+  function renderWorkout(){
+    renderWorkoutStats();
+    renderWorkoutChart();
+    renderWorkoutDay();
+  }
+
+  // ================= NUTRITION PAGE =================
+  function renderNutrition(){
+    const today = todayStr();
+    const ym = currentYearMonth();
+    const todayEntry = nutritionEntries.find(e => e.date === today);
+    document.getElementById("nuTodayProtein").textContent = todayEntry ? todayEntry.protein + "g" : "—";
+    document.getElementById("nuTodayCals").textContent = todayEntry ? todayEntry.calories : "—";
+    const monthEntries = nutritionEntries.filter(e => e.date.startsWith(ym));
+    document.getElementById("nuDaysLogged").textContent = monthEntries.length;
+
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+    const labels = [], proteinValues = [], calsValues = [];
+    for (let d = 1; d <= daysInMonth; d++){
+      const dateStr = ym + "-" + String(d).padStart(2,"0");
+      const entry = nutritionEntries.find(e => e.date === dateStr);
+      labels.push(fmtDate(dateStr));
+      proteinValues.push(entry ? entry.protein : 0);
+      calsValues.push(entry ? entry.calories : 0);
+    }
+    renderNutritionChart("nuChartWrap", labels, proteinValues, calsValues);
+
+    const listEl = document.getElementById("nuList");
+    const sorted = [...nutritionEntries].sort((a,b) => a.date.localeCompare(b.date));
+    const recent = [...sorted].reverse().slice(0, 8);
+    if (!recent.length){
+      listEl.innerHTML = `<div class="empty-row">No entries yet.</div>`;
+    } else {
+      listEl.innerHTML = recent.map(e => `
+        <div class="list-row">
+          <div class="list-row-main">
+            <span class="list-row-title">${fmtDate(e.date)}</span>
+            <span class="list-row-sub">${e.protein}g protein · ${e.calories} cal</span>
+          </div>
+          <button class="list-del" data-id="${e.id}">&times;</button>
+        </div>
+      `).join("");
+      listEl.querySelectorAll(".list-del").forEach(btn => btn.addEventListener("click", () => {
+        playDeleteSound();
+        nutritionEntries = nutritionEntries.filter(x => x.id !== btn.dataset.id);
+        saveNutrition(); renderNutrition();
+      }));
+    }
+  }
+
+  document.getElementById("nuAddBtn").addEventListener("click", () => {
+    const date = document.getElementById("nuDate").value || todayStr();
+    const protein = parseFloat(document.getElementById("nuProtein").value) || 0;
+    const calories = parseFloat(document.getElementById("nuCals").value) || 0;
+    const statusEl = document.getElementById("nuStatus");
+    if (!protein && !calories){ statusEl.textContent = "Enter protein or calories."; return; }
+    nutritionEntries = nutritionEntries.filter(e => e.date !== date);
+    nutritionEntries.push({ id: uid(), date, protein, calories });
+    saveNutrition();
+    playAddSound();
+    statusEl.textContent = "";
+    document.getElementById("nuProtein").value = "";
+    document.getElementById("nuCals").value = "";
+    renderNutrition();
+  });
+
+  // ================= HISTORY PAGE =================
+  const ICON_PATHS = {
+    protein: '<path d="M12 3v6M8 3v3a4 4 0 0 0 8 0V3M8 9v12M16 9c-2 0-3 1.5-3 4s1 4 3 4"/>',
+    calories: '<path d="M12 2c1 3-3 4-3 8a3 3 0 0 0 6 0c0-1-.5-2-1-3 2 1 3 3 3 5a5 5 0 0 1-10 0c0-4 3-6 5-10z"/>',
+    history: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+  };
+  const METRIC_COLORS = { protein: "green", avgprotein: "blue", calories: "red" };
+  const METRIC_VARS = { green: { var: "--m-green", hex: "#30B158" }, blue: { var: "--m-blue", hex: "#0A84FF" }, red: { var: "--m-red", hex: "#FF3B30" } };
+  function iconSvg(type){
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[type]}</svg>`;
+  }
+  function iconBadge(iconType, colorClass){
+    return `<div class="icon-badge ${colorClass}">${iconSvg(iconType)}</div>`;
+  }
+
+  function monthlyNutritionStats(ym){
+    const entries = nutritionEntries.filter(e => e.date.startsWith(ym));
+    if (!entries.length) return { proteinTotal: null, avgProtein: null, caloriesTotal: null, daysLogged: 0 };
+    const proteinTotal = entries.reduce((s,e)=>s+e.protein,0);
+    const caloriesTotal = entries.reduce((s,e)=>s+e.calories,0);
+    return { proteinTotal, avgProtein: proteinTotal / entries.length, caloriesTotal, daysLogged: entries.length };
+  }
+  function getAllMonths(){
+    const set = new Set();
+    Object.keys(workoutData).forEach(d => set.add(d.slice(0,7)));
+    nutritionEntries.forEach(e => set.add(e.date.slice(0,7)));
+    set.add(currentYearMonth());
+    return Array.from(set).sort().reverse();
+  }
+
+  function renderHistory(){
+    const curYm = currentYearMonth();
+    const months = getAllMonths();
+
+    const listEl = document.getElementById("historyMonthList");
+    if (!months.length){
+      listEl.innerHTML = `<div class="empty-row" style="margin:0 20px;">No history yet — log entries on the other tabs first.</div>`;
+      return;
+    }
+
+    listEl.innerHTML = months.map(ym => {
+      const s = monthlyNutritionStats(ym);
+      const isCurrent = ym === curYm;
+      return `
+        <div class="month-tab${isCurrent ? " current" : ""}" data-ym="${ym}">
+          <div class="month-tab-head">
+            <span class="month-tab-title">${fmtMonth(ym)}</span>
+            <span class="month-tab-chevron">›</span>
+          </div>
+          <div class="month-mini-row">
+            <div class="month-mini-box">
+              ${iconSvg("protein")}
+              <p class="month-mini-value" style="color:var(--m-green)">${s.proteinTotal !== null ? s.proteinTotal+"g" : "—"}</p>
+              <p class="month-mini-label">Protein</p>
+            </div>
+            <div class="month-mini-box">
+              ${iconSvg("protein")}
+              <p class="month-mini-value" style="color:var(--m-blue)">${s.avgProtein !== null ? Math.round(s.avgProtein)+"g" : "—"}</p>
+              <p class="month-mini-label">Avg Protein</p>
+            </div>
+            <div class="month-mini-box">
+              ${iconSvg("calories")}
+              <p class="month-mini-value" style="color:var(--m-red)">${s.caloriesTotal !== null ? s.caloriesTotal : "—"}</p>
+              <p class="month-mini-label">Calories</p>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    document.querySelectorAll("#historyMonthList .month-tab").forEach(tab => {
+      tab.addEventListener("click", () => { playClickSound(); openMonthDetail(tab.dataset.ym); });
+    });
+  }
+
+  function renderMonthDetail(ym){
+    document.getElementById("mdEyebrow").textContent = fmtMonth(ym);
+    const s = monthlyNutritionStats(ym);
+
+    const rows = [
+      { kind: "protein", label: "Total Protein", value: s.proteinTotal !== null ? s.proteinTotal+"g" : "—" },
+      { kind: "avgprotein", label: "Avg Protein/day", value: s.avgProtein !== null ? Math.round(s.avgProtein)+"g" : "—" },
+      { kind: "calories", label: "Total Calories", value: s.caloriesTotal !== null ? s.caloriesTotal : "—" },
+    ];
+
+    document.getElementById("monthDetailRecap").innerHTML = rows.map(r => {
+      const color = METRIC_COLORS[r.kind];
+      return `
+      <div class="recap-row" data-kind="${r.kind}" data-ym="${ym}">
+        <div class="recap-left">
+          ${iconBadge(r.kind === "calories" ? "calories" : "protein", color)}
+          <div>
+            <p class="recap-title">${r.label}</p>
+            <p class="recap-sub">Monthly recap</p>
+          </div>
+        </div>
+        <div class="recap-right">
+          <p class="recap-value" style="color:var(${METRIC_VARS[color].var})">${r.value}</p>
+          <span class="recap-chevron">›</span>
+        </div>
+      </div>
+    `;
+    }).join("");
+
+    document.querySelectorAll("#monthDetailRecap .recap-row").forEach(row => {
+      row.addEventListener("click", () => { playClickSound(); openMonthArchive(row.dataset.ym, row.dataset.kind); });
+    });
+  }
+
+  function renderMonthArchive(ym, kind){
+    document.getElementById("archiveEyebrow").textContent = fmtMonth(ym);
+    const isCalories = kind === "calories";
+    document.getElementById("archiveTitle").textContent = isCalories ? "Calories" : (kind === "avgprotein" ? "Avg Protein/day" : "Total Protein");
+
+    const [y, m] = ym.split("-").map(Number);
+    const daysInMonth = new Date(y, m, 0).getDate();
+    const entries = nutritionEntries.filter(e => e.date.startsWith(ym)).sort((a,b) => a.date.localeCompare(b.date));
+    const dayLabels = [], chartValues = [];
+    for (let d = 1; d <= daysInMonth; d++){
+      const ds = ym + "-" + String(d).padStart(2,"0");
+      const entry = entries.find(e => e.date === ds);
+      dayLabels.push(fmtDate(ds));
+      chartValues.push(entry ? (isCalories ? entry.calories : entry.protein) : 0);
+    }
+
+    let statRowHtml = "";
+    if (isCalories){
+      const total = entries.reduce((s,e)=>s+e.calories,0);
+      const avg = entries.length ? Math.round(total/entries.length) : 0;
+      statRowHtml = `
+        <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">Total calories</div></div>
+        <div class="stat-card"><div class="stat-value">${entries.length}</div><div class="stat-label">Days logged</div></div>
+        <div class="stat-card"><div class="stat-value">${avg}</div><div class="stat-label">Avg / day</div></div>
+      `;
+    } else {
+      const total = entries.reduce((s,e)=>s+e.protein,0);
+      const avg = entries.length ? Math.round(total/entries.length) : 0;
+      statRowHtml = `
+        <div class="stat-card"><div class="stat-value">${total}g</div><div class="stat-label">Total protein</div></div>
+        <div class="stat-card"><div class="stat-value">${entries.length}</div><div class="stat-label">Days logged</div></div>
+        <div class="stat-card"><div class="stat-value">${avg}g</div><div class="stat-label">Avg / day</div></div>
+      `;
+    }
+    document.getElementById("archiveStatRow").innerHTML = statRowHtml;
+
+    renderBarChart("archiveChartWrap", dayLabels, chartValues, "--accent", v => isCalories ? v + " cal" : v + "g");
+
+    const listEl = document.getElementById("archiveList");
+    listEl.innerHTML = entries.length ? [...entries].reverse().map(e => `
+      <div class="list-row">
+        <div class="list-row-main">
+          <span class="list-row-title">${fmtDate(e.date)}</span>
+          <span class="list-row-sub">${e.protein}g protein · ${e.calories} cal</span>
+        </div>
+        <span class="list-row-value">${isCalories ? e.calories + " cal" : e.protein + "g"}</span>
+      </div>
+    `).join("") : `<div class="empty-row">No entries this month.</div>`;
+  }
+
+  function renderAll(){
+    if (activePage === "workout") renderWorkout();
+    if (activePage === "nutrition") renderNutrition();
+    if (activePage === "history") renderHistory();
+    if (subPage && subPage.view === "detail") renderMonthDetail(subPage.ym);
+    if (subPage && subPage.view === "archive") renderMonthArchive(subPage.ym, subPage.kind);
+  }
+
+  async function init(){
+    document.getElementById("nuDate").value = todayStr();
+    await loadAll();
+    setAccent("blue");
+    renderAll();
+    window.addEventListener("resize", renderAll);
+  }
+  init();
+})();
+</script>
+</body>
+</html>
